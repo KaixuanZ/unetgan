@@ -739,6 +739,7 @@ def load_weights(G, D, state_dict, weights_root, experiment_name,config, epoch_i
   #root = '/'.join([weights_root, experiment_name])
   #root = "/dlc/Employees/esc2rng/biggan_abst/56932_1708_c_ctrl/weights/BigGAN_coco_seed0_Gch64_Dch64_bs64_Glr5.0e-05_Dlr2.0e-04_Gnlrelu_Dnlrelu_Ginitortho_Dinitortho_Gattn64_Dattn64/"
   root = config["resume_from"]
+  device = torch.device('cpu')
   if name_suffix:
     print('Loading %s weights from %s...' % (name_suffix, root))
   else:
@@ -746,24 +747,24 @@ def load_weights(G, D, state_dict, weights_root, experiment_name,config, epoch_i
   print("epoch id : ", epoch_id)
   if G is not None:
     G.load_state_dict(
-      torch.load('%s/%s.pth' % (root, join_strings('_', ['G', epoch_id,  name_suffix]))),
+      torch.load('%s/%s.pth' % (root, join_strings('_', ['G', epoch_id,  name_suffix])), map_location=device),
       strict=strict)
     if load_optim:
-      s = torch.load('%s/%s.pth' % (root, join_strings('_', ['G_optim', epoch_id,  name_suffix])))
+      s = torch.load('%s/%s.pth' % (root, join_strings('_', ['G_optim', epoch_id,  name_suffix])), map_location=device)
       print(">>" , len(s))
       #print(s)
       G.optim.load_state_dict(
-        torch.load('%s/%s.pth' % (root, join_strings('_', ['G_optim', epoch_id,  name_suffix]))))
+        torch.load('%s/%s.pth' % (root, join_strings('_', ['G_optim', epoch_id,  name_suffix])), map_location=device))
   if D is not None:
     D.load_state_dict(
-      torch.load('%s/%s.pth' % (root, join_strings('_', ['D', epoch_id,  name_suffix]))),
+      torch.load('%s/%s.pth' % (root, join_strings('_', ['D', epoch_id,  name_suffix])), map_location=device),
       strict=strict)
     if load_optim:
       D.optim.load_state_dict(
-        torch.load('%s/%s.pth' % (root, join_strings('_', ['D_optim', epoch_id,  name_suffix]))))
+        torch.load('%s/%s.pth' % (root, join_strings('_', ['D_optim', epoch_id,  name_suffix])), map_location=device))
   # Load state dict
   for item in state_dict:
-    D = torch.load('%s/%s.pth' % (root, join_strings('_', ['state_dict', epoch_id,  name_suffix])))
+    D = torch.load('%s/%s.pth' % (root, join_strings('_', ['state_dict', epoch_id,  name_suffix])), map_location=device)
     if item in D:
       state_dict[item] = D[item]
     else:
@@ -772,7 +773,7 @@ def load_weights(G, D, state_dict, weights_root, experiment_name,config, epoch_i
 
   if G_ema is not None:
     G_ema.load_state_dict(
-      torch.load('%s/%s.pth' % (root, join_strings('_', ['G_ema', epoch_id, name_suffix]))),
+      torch.load('%s/%s.pth' % (root, join_strings('_', ['G_ema', epoch_id, name_suffix])), map_location=device),
       strict=strict)
 
 
