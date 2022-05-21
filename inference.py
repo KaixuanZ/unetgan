@@ -206,13 +206,20 @@ def run(config):
 
     print("Loaded ", config["dataset"])
 
+    if config["test_mode"]:
+        fake_imgs = G(z_, y_)
+        _, prob = D(fake_imgs)
+        prob = torch.sigmoid(prob)
+        print('D(fake image):', prob.mean())
+        # import pdb;pdb.set_trace()
 
-    fake_imgs = G(z_, y_)
-    _, prob = D(fake_imgs)
-    prob = torch.sigmoid(res[1])
+        true_imgs = next(iter(data_loader))
+        _, prob = D(true_imgs)
+        prob = torch.sigmoid(prob)
+        print('D(true image):', prob.mean())
+    return G, D
 
-    print('D(fake image):', prob.mean())
-
+@torch.no_grad()
 def main():
 
     # parse command line and run
@@ -248,12 +255,11 @@ def main():
 
 
     keys = sorted(config.keys())
+    config["test_mode"] = False
     print("config")
     for k in keys:
         print(str(k).ljust(30,"."), config[k] )
+    return run(config)
 
-
-
-    run(config)
 if __name__ == '__main__':
     main()
