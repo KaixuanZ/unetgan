@@ -5,83 +5,20 @@
     "Large-Scale GAN Training for High Fidelity Natural Image Synthesis,"
     by A. Brock, J. Donahue, and K. Simonyan (arXiv 1809.11096).
     Let's go. """
-import os
-import functools
-import math
-import numpy as np
+import json
 use_tqdm=False
 if use_tqdm:
     from tqdm import tqdm, trange
 import torch
-import torch.nn as nn
-from torch.nn import init
-import torch.optim as optim
-import torch.nn.functional as F
-from torch.nn import Parameter as P
-import torchvision
 ####
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, utils
-from PyTorchDatasets import CocoAnimals
-from PyTorchDatasets import  FFHQ,Celeba
 from MyDataset import Dataset
-# Import my stuff
-import inception_utils
 import utils
-
-from PyTorchDatasets import CocoAnimals, FFHQ, Celeba
-from fid_score import calculate_fid_given_paths_or_tensor
-from torchvision.datasets import ImageFolder
-import pickle
-from matplotlib import pyplot as plt
-from mixup import CutMix
-import gc
-import sys
-from types import ModuleType, FunctionType
-from gc import get_referents
 
 ####
 
-
-# Custom objects know their class.
-# Function objects seem to know way too much, including modules.
-# Exclude modules as well.
-BLACKLIST = type, ModuleType, FunctionType
-
-
-def getsize(obj):
-    """sum size of object & members."""
-    if isinstance(obj, BLACKLIST):
-        raise TypeError('getsize() does not take argument of type: '+ str(type(obj)))
-    seen_ids = set()
-    size = 0
-    objects = [obj]
-    while objects:
-        need_referents = []
-        for obj in objects:
-            if not isinstance(obj, BLACKLIST) and id(obj) not in seen_ids:
-                seen_ids.add(id(obj))
-                size += sys.getsizeof(obj)
-                need_referents.append(obj)
-        objects = get_referents(*need_referents)
-    return size
-
-
-# The main training file. Config is a dictionary specifying the configuration of this training run.
-#torch.backends.cudnn.benchmark = True
-
-def find_between(s, start, end):
-    return (s.split(start))[1].split(end)[0]
-
-
-
-def requires_grad(model, flag=True):
-    for p in model.parameters():
-        p.requires_grad = flag
-
 def run(config):
-
-    import train_fns
 
     if config["dataset"]=="coco_animals":
         folders = ['bird','cat','dog','horse','sheep','cow','elephant','monkey','zebra','giraffe']
@@ -211,54 +148,24 @@ def run(config):
         _, prob = D(fake_imgs)
         prob = torch.sigmoid(prob)
         print('D(fake image):', prob.mean())
-        # import pdb;pdb.set_trace()
 
         true_imgs = next(iter(data_loader))
         _, prob = D(true_imgs)
         prob = torch.sigmoid(prob)
         print('D(true image):', prob.mean())
-    return G, D
+    # import pdb;pdb.set_trace()
+    return G, D, z_, y_
 
 @torch.no_grad()
 def main():
+    with open('configs/unetgan.json') as f:
+        config = json.load(f)
+    print(config)
+    config["test_mode"] = True
+    # config["test_mode"] = False
 
-    # parse command line and run
-    parser = utils.prepare_parser()
-    config = vars(parser.parse_args())
-
-    if config["gpus"] !="":
-        os.environ["CUDA_VISIBLE_DEVICES"] = config["gpus"]
-    random_number_string = str(int(np.random.rand()*1000000)) + "_" + config["id"]
-    config["stop_it"] = 99999999999999
-
-
-    if config["debug"]:
-        config["save_every"] = 30
-        config["sample_every"] = 20
-        config["test_every"] = 20
-        config["num_epochs"] = 1
-        config["stop_it"] = 35
-        config["slow_mixup"] = False
-
-    config["num_gpus"] = len(config["gpus"].replace(",",""))
-
-    config["random_number_string"] = random_number_string
-    new_root = os.path.join(config["base_root"],random_number_string)
-    if not os.path.isdir(new_root):
-        os.makedirs(new_root)
-        os.makedirs(os.path.join(new_root, "samples"))
-        os.makedirs(os.path.join(new_root, "weights"))
-        os.makedirs(os.path.join(new_root, "data"))
-        os.makedirs(os.path.join(new_root, "logs"))
-        print("created ", new_root)
-    config["base_root"] = new_root
-
-
-    keys = sorted(config.keys())
-    config["test_mode"] = False
-    print("config")
-    for k in keys:
-        print(str(k).ljust(30,"."), config[k] )
+    # with open('configs/unetgan.json','w') as json_file:
+    #     json.dump(config, json_file)
     return run(config)
 
 if __name__ == '__main__':
